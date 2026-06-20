@@ -164,11 +164,9 @@
       border-radius: 50%;
       pointer-events: none;
       transform: translate(-50%, -50%);
-      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s, border-color 0.3s, backdrop-filter 0.3s;
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s, border-color 0.3s;
       z-index: 9999;
       display: block;
-      backdrop-filter: blur(0px);
-      -webkit-backdrop-filter: blur(0px);
     }
     #spatial-cursor-dot {
       position: fixed;
@@ -190,8 +188,6 @@
       height: 55px;
       border-color: rgba(255, 255, 255, 0.6);
       background-color: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(3px);
-      -webkit-backdrop-filter: blur(3px);
     }
     .spatial-hover #spatial-cursor-dot {
       background-color: var(--primary);
@@ -2011,6 +2007,36 @@
     let activeCategory = "cloud-ai";
     let autoRotateInterval;
 
+    function updateHologramCardVisibility() {
+      const carousel = document.getElementById('hologram-carousel');
+      const cards = carousel.querySelectorAll('.hologram-card');
+      const count = certificatesData[activeCategory].length;
+      const angleStep = 360 / count;
+      
+      cards.forEach((card, index) => {
+        // Calculate absolute angle of the card in world space
+        let absAngle = ((index * angleStep + currentRotation) % 360 + 360) % 360;
+        
+        // Normalize angle to range [-180, 180]
+        if (absAngle > 180) absAngle -= 360;
+        
+        // Display only cards facing the front half (within 80 degrees of the viewer)
+        if (Math.abs(absAngle) <= 80) {
+          card.style.opacity = '1';
+          card.style.pointerEvents = 'auto';
+          card.style.visibility = 'visible';
+          
+          // Subtle scale and blur relative to rotation distance for visual depth
+          const factor = 1 - (Math.abs(absAngle) / 100);
+          card.style.filter = `blur(${(1 - factor) * 1.5}px)`;
+        } else {
+          card.style.opacity = '0';
+          card.style.pointerEvents = 'none';
+          card.style.visibility = 'hidden';
+        }
+      });
+    }
+
     function renderHologramCarousel(category) {
       activeCategory = category;
       const carousel = document.getElementById('hologram-carousel');
@@ -2061,6 +2087,7 @@
       // Reset rotation angles
       currentRotation = 0;
       carousel.style.transform = `rotateY(0deg)`;
+      updateHologramCardVisibility();
     }
 
     function selectHoloTab(category) {
@@ -2079,6 +2106,7 @@
       
       currentRotation += direction * angleStep;
       carousel.style.transform = `rotateY(${currentRotation}deg)`;
+      updateHologramCardVisibility();
     }
 
     function startAutoRotate() {
